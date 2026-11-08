@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>转角盲盒 · Corner Capsule</title>
+<meta name="description" content="朋友约你一起开同一个转角盲盒。A friend invited you to open the same Corner Capsule.">
+<meta property="og:title" content="一起开同一个转角盲盒 · Corner Capsule">
+<meta property="og:description" content="朋友抽到了一个附近的秘密地点，约你一起走过去。A friend drew a secret place nearby. Walk there together.">
+<meta property="og:image" content="https://hb5201437.github.io/corner-capsule/icon.png">
+<meta property="og:type" content="website">
+<meta name="apple-itunes-app" content="app-id=6832158882">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="icon.png">
+<style>
+  .invite { text-align: center; }
+  .invite header { padding-bottom: 64px; }
+  .invite header img { margin: 0 auto 18px; }
+  .invite h1 { font-size: clamp(30px, 7vw, 44px); }
+  .invite main { max-width: 440px; padding-top: 28px; }
+  .code { font: 700 clamp(40px, 13vw, 56px)/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .14em; margin: 4px 0 6px; padding-left: .14em; }
+  .actions { display: flex; flex-direction: column; gap: 12px; margin-top: 26px; }
+  .actions .pill { display: block; margin: 0; padding: 15px 20px; font-size: 18px; }
+  .pill.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
+  button.pill { border: 0; font: inherit; font-weight: 700; cursor: pointer; width: 100%; }
+  .note { margin-top: 26px; }
+  .wechat { display: none; background: var(--sun); color: #2C2E2A; border-radius: 18px; padding: 12px 16px; margin: 0 0 22px; font-weight: 600; font-size: 15px; }
+  .in-wechat .wechat { display: block; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body class="invite">
+<header><div class="wrap">
+  <img src="icon.png" alt="">
+  <h1 data-t="title">一起开盲盒</h1>
+  <p data-t="lede">朋友抽到了一个附近的秘密地点，约你一起走过去。到了才知道是哪儿。</p>
+</div></header>
+<main>
+  <p class="wechat" data-t="wechat">在微信里打不开 App？点右上角「···」，选「在默认浏览器中打开」。</p>
+
+  <div id="has-code">
+    <p class="muted" data-t="codeLabel">口令</p>
+    <p class="code" id="code"></p>
+    <div class="actions">
+      <a class="pill" id="open" href="#" data-t="open">打开转角盲盒</a>
+      <a class="pill ghost" id="get" href="https://apps.apple.com/app/id6832158882" data-t="get">还没装？去 App Store 下载</a>
+      <button class="pill ghost" id="copy" type="button" data-t="copy">复制口令</button>
+    </div>
+    <p class="muted note" data-t="howto">装好之后打开转角盲盒，点首页的「输入朋友的口令」，输入上面这 6 位。口令 48 小时内有效。</p>
+  </div>
+
+  <div id="no-code" hidden>
+    <p data-t="noCode">这个链接里没有口令。请朋友在转角盲盒里重新点一次「发给朋友」。</p>
+    <div class="actions">
+      <a class="pill" href="https://apps.apple.com/app/id6832158882" data-t="getPlain">去 App Store 下载</a>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  var T = {
+    "zh-Hans": {},
+    "zh-Hant": {
+      title: "一起開盲盒",
+      lede: "朋友抽到了一個附近的秘密地點，約你一起走過去。到了才知道是哪裡。",
+      wechat: "在微信裡打不開 App？點右上角「···」，選「在預設瀏覽器中開啟」。",
+      codeLabel: "邀請碼",
+      open: "打開轉角盲盒",
+      get: "還沒安裝？到 App Store 下載",
+      copy: "複製邀請碼",
+      copied: "已複製",
+      howto: "安裝好之後打開轉角盲盒，點首頁的「輸入朋友的邀請碼」，輸入上面這 6 碼。邀請碼 48 小時內有效。",
+      noCode: "這個連結裡沒有邀請碼。請朋友在轉角盲盒裡重新點一次「傳給朋友」。",
+      getPlain: "到 App Store 下載",
+      doc: "轉角盲盒 · Corner Capsule"
+    },
+    en: {
+      title: "Open it together",
+      lede: "A friend drew a secret place nearby and wants you to walk there too. You find out where it is when you arrive.",
+      wechat: "Can't open the app from WeChat? Tap ··· at the top right and choose Open in Browser.",
+      codeLabel: "Code",
+      open: "Open Corner Capsule",
+      get: "Don't have it? Get the app",
+      copy: "Copy code",
+      copied: "Copied",
+      howto: "Once it's installed, open Corner Capsule, tap “Enter a friend's code” on the home screen and type the 6 characters above. The code works for 48 hours.",
+      noCode: "This link has no code in it. Ask your friend to tap “Send to a friend” in Corner Capsule again.",
+      getPlain: "Get it on the App Store",
+      doc: "Corner Capsule"
+    }
+  };
+  T["zh-Hans"].copied = "已复制";
+
+  var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
+  var lang = "en";
+  for (var i = 0; i < langs.length; i++) {
+    var l = String(langs[i]).toLowerCase();
+    if (l.indexOf("zh") === 0) {
+      lang = /hant|tw|hk|mo/.test(l) ? "zh-Hant" : "zh-Hans";
+      break;
+    }
+    if (l.indexOf("en") === 0) break;
+  }
+  var hl = new URLSearchParams(location.search).get("hl");
+  if (hl && T[hl]) lang = hl;
+  var t = T[lang];
+  document.documentElement.lang = lang;
+  if (t.doc) document.title = t.doc;
+  document.querySelectorAll("[data-t]").forEach(function (el) {
+    var v = t[el.getAttribute("data-t")];
+    if (v) el.textContent = v;
+  });
+
+  if (/MicroMessenger/i.test(navigator.userAgent)) document.body.classList.add("in-wechat");
+
+  // 口令：?c=ABC123，只收 App 会生成的字符
+  var raw = new URLSearchParams(location.search).get("c") || "";
+  var code = raw.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, "").slice(0, 6);
+  if (code.length !== 6) {
+    document.getElementById("has-code").hidden = true;
+    document.getElementById("no-code").hidden = false;
+    return;
+  }
+  document.getElementById("code").textContent = code;
+  document.getElementById("open").href = "cornerbox://join/" + code;
+
+  var copy = document.getElementById("copy");
+  copy.addEventListener("click", function () {
+    var done = function () {
+      copy.textContent = t.copied || T["zh-Hans"].copied;
+      setTimeout(function () { copy.textContent = t.copy || "复制口令"; }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done, function () {});
+    }
+  });
+})();
+</script>
+</body>
+</html>
