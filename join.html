@@ -28,9 +28,32 @@
   .wechat { display: none; background: var(--sun); color: #2C2E2A; border-radius: 18px; padding: 12px 16px; margin: 0 0 22px; font-weight: 600; font-size: 15px; }
   .in-wechat .wechat { display: block; }
   [hidden] { display: none !important; }
+  /* 微信内置浏览器打不开 App，整屏指向右上角「···」 */
+  .wx-guide { display: none; position: fixed; inset: 0; z-index: 20; background: rgba(20, 22, 18, .95); color: #fff; padding: 6px 22px 28px; overflow: auto; text-align: left; }
+  .wx-guide.show { display: block; }
+  .in-wechat #copy { order: -1; }
+  .wx-arrow { display: block; width: 112px; height: 122px; margin: 0 0 0 auto; color: var(--sun); }
+  .wx-guide h2 { color: #fff; font-size: 24px; line-height: 1.3; margin: 0 0 18px; }
+  .wx-guide ol { list-style: none; padding: 0; margin: 0 0 30px; counter-reset: s; }
+  .wx-guide li { color: #fff; font-size: 19px; font-weight: 600; margin: 0 0 12px; counter-increment: s; }
+  .wx-guide li::before { content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sun); color: #2C2E2A; font-size: 15px; font-weight: 800; margin-right: 10px; vertical-align: 2px; }
+  .wx-guide button { width: 100%; background: transparent; color: #fff; border: 2px solid rgba(255, 255, 255, .45); border-radius: 999px; padding: 13px 20px; font: inherit; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body class="invite">
+<div class="wx-guide" id="wx-guide" role="dialog" aria-modal="true" aria-labelledby="wx-title">
+  <svg class="wx-arrow" viewBox="0 0 120 130" aria-hidden="true">
+    <path d="M16 124 C 30 66, 58 36, 100 16" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+    <path d="M77 9 L104 14 L90 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <h2 id="wx-title" data-t="wxTitle">用浏览器打开，直接进 App</h2>
+  <ol>
+    <li data-t="wxStep1">点右上角的「···」</li>
+    <li data-t="wxStep2">选「在默认浏览器中打开」</li>
+    <li data-t="wxStep3">再点「打开转角盲盒」</li>
+  </ol>
+  <button type="button" id="wx-close" data-t="wxClose">不换了，直接看口令</button>
+</div>
 <header><div class="wrap">
   <img src="icon.png" alt="">
   <h1 data-t="title">一起开盲盒</h1>
@@ -73,7 +96,12 @@
       howto: "安裝好之後打開轉角盲盒，點首頁的「輸入朋友的邀請碼」，輸入上面這 6 碼。邀請碼 48 小時內有效。",
       noCode: "這個連結裡沒有邀請碼。請朋友在轉角盲盒裡重新點一次「傳給朋友」。",
       getPlain: "到 App Store 下載",
-      doc: "轉角盲盒 · Corner Capsule"
+      doc: "轉角盲盒 · Corner Capsule",
+      wxTitle: "用瀏覽器開啟，直接進 App",
+      wxStep1: "點右上角的「···」",
+      wxStep2: "選「在預設瀏覽器中開啟」",
+      wxStep3: "再點「打開轉角盲盒」",
+      wxClose: "不換了，直接看邀請碼"
     },
     en: {
       title: "Open it together",
@@ -87,7 +115,12 @@
       howto: "Once it's installed, open Corner Capsule, tap “Enter a friend's code” on the home screen and type the 6 characters above. The code works for 48 hours.",
       noCode: "This link has no code in it. Ask your friend to tap “Send to a friend” in Corner Capsule again.",
       getPlain: "Get it on the App Store",
-      doc: "Corner Capsule"
+      doc: "Corner Capsule",
+      wxTitle: "Open in your browser to jump into the app",
+      wxStep1: "Tap ··· at the top right",
+      wxStep2: "Choose Open in Default Browser",
+      wxStep3: "Then tap Open Corner Capsule",
+      wxClose: "Stay here and show the code"
     }
   };
   T["zh-Hans"].copied = "已复制";
@@ -112,7 +145,8 @@
     if (v) el.textContent = v;
   });
 
-  if (/MicroMessenger/i.test(navigator.userAgent)) document.body.classList.add("in-wechat");
+  var inWeChat = /MicroMessenger/i.test(navigator.userAgent) || new URLSearchParams(location.search).get("wx") === "1";
+  if (inWeChat) document.body.classList.add("in-wechat");
 
   // 口令：?c=ABC123，只收 App 会生成的字符
   var raw = new URLSearchParams(location.search).get("c") || "";
@@ -125,14 +159,40 @@
   document.getElementById("code").textContent = code;
   document.getElementById("open").href = "cornerbox://join/" + code;
 
+  if (inWeChat) {
+    // 微信里点不开 App：先引导去浏览器；不想换就把「复制口令」顶上来
+    document.getElementById("open").hidden = true;
+    document.getElementById("copy").classList.remove("ghost");
+    var guide = document.getElementById("wx-guide");
+    guide.classList.add("show");
+    var close = function () { guide.classList.remove("show"); };
+    document.getElementById("wx-close").addEventListener("click", close);
+    guide.addEventListener("click", function (e) { if (e.target === guide) close(); });
+  }
+
   var copy = document.getElementById("copy");
   copy.addEventListener("click", function () {
     var done = function () {
       copy.textContent = t.copied || T["zh-Hans"].copied;
       setTimeout(function () { copy.textContent = t.copy || "复制口令"; }, 1800);
     };
+    // 微信等内置浏览器不一定支持 clipboard API，退回到老办法
+    var fallback = function () {
+      var ta = document.createElement("textarea");
+      ta.value = code;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      try { if (document.execCommand("copy")) done(); } catch (e) {}
+      document.body.removeChild(ta);
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(done, function () {});
+      navigator.clipboard.writeText(code).then(done, fallback);
+    } else {
+      fallback();
     }
   });
 })();
